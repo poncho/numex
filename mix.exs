@@ -32,9 +32,11 @@ defmodule Numex.Mixfile do
 
   defp deps do
     [
+      {:timex, "~> 3.1"},
       {:ex_doc, "~> 0.15.1", only: :dev},
       {:excoveralls, "~> 0.6.3", only: :test},
-      {:credo, "~> 0.7.3", only: [:dev, :test]}
+      {:credo, "~> 0.7.3", only: [:dev, :test]},
+      {:xlsxir, "~> 1.5"}
     ]
   end
 end
