@@ -58,24 +58,35 @@ defmodule Numex.Financial do
     -(fv + pv * exp1) / (exp2 * (exp1 - 1))
   end
 
-  @doc """
-    f(x) => v/(1 + x)^t
-    f'(x) => -tv(x + 1)^(-t-1)
-  """
-  @spec irr([float]) :: float
-  def irr(values, guess \\ 0.1) do
-    values
-    |> Enum.with_index
-    |> Enum.map_reduce(guess, &do_irr/2)
+  @spec xirr([float], float) :: float
+  def xirr(values, dates, guess \\ 0.1)
+  def xirr([], [], _guess), do: []
+  def xirr(values, dates, _guess) when length(values) != length(dates), do: :error
+  def xirr(values, dates, guess) do
+    dates =
+      dates
+      |> Enum.map(&Date.from_iso8601!/1)
+
+    date1 = Enum.at(dates, 0)
+
+    do_xirr(values, dates, date1, guess)
   end
 
-  defp do_irr(value, acc), do: do_f_irr(value, acc) #/ do_dx_irr(value, acc)
-
-  defp do_f_irr(value, acc) do
-    elem(value, 0) / :math.pow((1 + acc), elem(value, 1))
+  def do_xirr([], _, _, _), do: []
+  def do_xirr([hv | tv], [hd | td], date1, guess) do
+    [calculate_xirr(hv, hd, date1, guess) | do_xirr(tv, td, date1, guess)]
   end
 
-  defp do_dx_irr do
-    :ok
+  def calculate_xirr(value, date, date1, guess) do
+      #value / :math.pow((1 + guess), diff_dates(date1, date)/365)
+      diff_dates(date1, date)
   end
+
+  @spec diff_dates(Date, Date) :: integer
+  defp diff_dates(date1, date2) do
+    #IO.inspect "#{date1.year} : #{date2.year}"
+    year = abs(date1.year - date2.year)
+    month = abs(date1.month - date)
+  end
+
 end
