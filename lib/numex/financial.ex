@@ -44,6 +44,17 @@ defmodule Numex.Financial do
   end
 
   @doc """
+    Returns the NPV (Net Present Value) of a cash flow series.
+  """
+  @spec npv(float, [float]) :: float
+  def npv(rate, values) do
+    values
+    |> Enum.with_index
+    |> Enum.reduce(0.0, fn {value, index}, acc ->
+        acc + value/:math.pow((1 + rate), index) end)
+  end
+
+  @doc """
     Compute the payment against loan principal plus interest
   """
   @spec pmt(float, integer, float, float, 0..1) :: float
@@ -56,37 +67,6 @@ defmodule Numex.Financial do
     exp2 = (1 + rate * @when_type[type]) / rate
 
     -(fv + pv * exp1) / (exp2 * (exp1 - 1))
-  end
-
-  @spec xirr([float], float) :: float
-  def xirr(values, dates, guess \\ 0.1)
-  def xirr([], [], _guess), do: []
-  def xirr(values, dates, _guess) when length(values) != length(dates), do: :error
-  def xirr(values, dates, guess) do
-    dates =
-      dates
-      |> Enum.map(&Date.from_iso8601!/1)
-
-    date1 = Enum.at(dates, 0)
-
-    do_xirr(values, dates, date1, guess)
-  end
-
-  def do_xirr([], _, _, _), do: []
-  def do_xirr([hv | tv], [hd | td], date1, guess) do
-    [calculate_xirr(hv, hd, date1, guess) | do_xirr(tv, td, date1, guess)]
-  end
-
-  def calculate_xirr(value, date, date1, guess) do
-      #value / :math.pow((1 + guess), diff_dates(date1, date)/365)
-      diff_dates(date1, date)
-  end
-
-  @spec diff_dates(Date, Date) :: integer
-  defp diff_dates(date1, date2) do
-    #IO.inspect "#{date1.year} : #{date2.year}"
-    year = abs(date1.year - date2.year)
-    month = abs(date1.month - date)
   end
 
 end
