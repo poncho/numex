@@ -11,6 +11,7 @@ defmodule Numex.Financial do
   """
 
   import Timex, only: [parse!: 2, diff: 3]
+  alias Decimal, as: D
 
   @when_type [begin: 1, end: 0]
 
@@ -59,7 +60,7 @@ defmodule Numex.Financial do
   @doc """
     Compute the payment against loan principal plus interest
   """
-  @spec pmt(float, integer, float, float, 0..1) :: float
+  @spec pmt(float, integer, float, float, atom) :: float
   def pmt(rate, nper, pv, fv \\ 0, type \\ :end)
   def pmt(rate, nper, pv, fv, _type) when rate == 0 do
     -(fv + pv) / nper
@@ -110,14 +111,17 @@ defmodule Numex.Financial do
       dates
       |> Enum.at(0)
 
+    guess = D.new(guess)
+    delta = D.new(delta)
+
     values
     |> Enum.zip(dates)
     |> _xirr(date1, guess, delta, limit)
 
   end
   defp _xirr(data, date1, guess, delta, limit) do
-    IO.inspect(guess, label: "GUESS")
     xirr_value = calculate_xirr(data, date1, guess)
+    IO.inspect(D.to_float(guess), label: "GUESS")
     IO.inspect(xirr_value, label: "XIRR")
     Process.sleep(2000)
     case xirr_value do
@@ -128,15 +132,17 @@ defmodule Numex.Financial do
             |> :erlang.float_to_binary(decimals: 2)
             |> Float.parse
           fixed_result
-      _ when xirr_value > 0 -> _xirr(data, date1, guess + delta, delta, limit)
-      _ when xirr_value < 0 -> _xirr(data, date1, guess - delta, delta, limit)
+      _ when xirr_value > 0 ->
+          _xirr(data, date1, D.add(guess, delta), delta, limit)
+      _ when xirr_value < 0 ->
+          _xirr(data, date1, D.sub(guess, delta), delta, limit)
     end
   end
 
   defp calculate_xirr(data, date1, guess) do
     data
     |> Enum.reduce(0.0, fn {value, date}, acc ->
-        exp = (value/:math.pow((1 + guess), (diff(date, date1, :days) / 365)))
+        exp = (value/:math.pow((1 + D.to_float(guess)), (diff(date, date1, :days) / 365)))
         # IO.inspect(acc, label: "ACC")
         # IO.inspect(exp, label: "NEXT")
         # Process.sleep(3000)
